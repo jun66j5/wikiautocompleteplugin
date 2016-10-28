@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import with_statement
+
 import pkg_resources
 import re
-from json import JSONEncoder
 
 from trac.core import *
 from trac.resource import Resource
@@ -14,6 +15,26 @@ from trac.web.chrome import ITemplateProvider, add_script, add_script_data, add_
 from trac.wiki.formatter import format_to_html, format_to_oneliner
 from trac.wiki.api import WikiSystem
 from trac.versioncontrol.api import RepositoryManager
+
+
+try:
+    import json
+except ImportError:
+    try:
+        import simplejson as json
+    except ImportError:
+        json = None
+if json:
+    def to_json(data):
+        return json.dumps(data)
+else:
+    def to_json(data):
+        from trac.util.presentation import to_json
+        text = to_json(data)
+        if isinstance(text, unicode):
+            text = text.encode('utf-8')
+        return text
+
 
 class WikiAutoCompleteModule(Component):
     """Auto-completes wiki formatting."""
@@ -163,8 +184,7 @@ class WikiAutoCompleteModule(Component):
         raise TracError()
 
     def _send_json(self, req, data):
-        content = JSONEncoder().encode(data).encode('utf-8')
-        req.send(content, 'application/json')
+        req.send(to_json(data), 'application/json')
 
     # ITemplateProvider methods
     
