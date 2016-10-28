@@ -77,18 +77,10 @@ class WikiAutoCompleteModule(Component):
             self._send_json(req, completions)
 
         elif strategy == 'wikipage':
-            with self.env.db_query as db:
-                rows = db("""
-                    SELECT name
-                    FROM wiki
-                    WHERE name %s
-                    GROUP BY name
-                    ORDER BY name
-                    LIMIT 10
-                    """ % db.prefix_match(),
-                    (db.prefix_match_value(term), ))
-            completions = [row[0] for row in rows
-                           if 'WIKI_VIEW' in req.perm(Resource('wiki', row[0]))]
+            pages = sorted(page for page in WikiSystem(self.env).pages
+                                if page.startswith(term) and
+                                   'WIKI_VIEW' in req.perm('wiki', page))
+            completions = pages[:10]
             self._send_json(req, completions)
 
         elif strategy == 'macro':
