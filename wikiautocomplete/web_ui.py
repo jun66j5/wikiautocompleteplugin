@@ -122,11 +122,12 @@ class WikiAutoCompleteModule(Component):
                     descr = provider.get_macro_description(name)
                     if isinstance(descr, (tuple, list)):
                         descr = dgettext(descr[0], to_unicode(descr[1]))
-                    descr = format_to_oneliner(self.env, context, descr, shorten=True)
-                    completions.append({
-                        'name': name,
-                        'description': descr,
-                    })
+                    completions.append({'name': name, 'description': descr})
+                completions = sorted(completions,
+                                     key=lambda entry: entry['name'])[:10]
+                for entry in completions:
+                    entry['description'] = format_to_oneliner(
+                        self.env, context, entry['description'], shorten=True)
             self._send_json(req, completions)
 
         elif strategy == 'source':
