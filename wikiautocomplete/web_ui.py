@@ -6,6 +6,7 @@ from json import JSONEncoder
 
 from trac.core import *
 from trac.resource import Resource
+from trac.ticket.model import Ticket
 from trac.util.text import to_unicode
 from trac.util.translation import dgettext
 from trac.web import IRequestFilter, IRequestHandler
@@ -60,20 +61,32 @@ class WikiAutoCompleteModule(Component):
             self._send_json(req, completions)
 
         elif strategy == 'ticket':
-            with self.env.db_query as db:
-                rows = db("""
-                    SELECT id, summary
-                    FROM ticket
-                    WHERE %s %s
+            try:
+                num = int(term)
+            except:
+                num = 0
+            args = []
+            mul = 1
+            while num > 0 and Ticket.id_is_valid(num):
+                args.append(num)
+                args.append(num + mul)
+                num *= 10
+                mul *= 10
+            if args:
+                expr = ' OR '.join(['id>=%s AND id<%s'] * (len(args) / 2))
+                rows = self.env.db_query("""
+                    SELECT id, summary FROM ticket
+                    WHERE %(expr)s
                     ORDER BY changetime DESC
                     LIMIT 10
-                    """ % (db.cast('id', 'text'), db.prefix_match()),
-                    (db.prefix_match_value(term), ))
-            completions = [{
-                'id': row[0],
-                'summary': row[1],
-                } for row in rows
-                if 'TICKET_VIEW' in req.perm(Resource('ticket', row[0]))]
+                    """ % {'expr': expr}, args)
+            else:
+                rows = self.env.db_query("""
+                    SELECT id, summary FROM ticket
+                    ORDER BY changetime DESC LIMIT 10""")
+            completions = [{'id': row[0], 'summary': row[1]}
+                           for row in rows
+                           if 'TICKET_VIEW' in req.perm('ticket', row[0])]
             self._send_json(req, completions)
 
         elif strategy == 'wikipage':
