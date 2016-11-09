@@ -86,7 +86,7 @@ jQuery(document).ready(function($) {
         },
 
         { // Milestone
-            match: /\bmilestone:(\S*)/,
+            match: /\bmilestone:(\S*)$/,
             search: search('milestone'),
             index: 1,
             replace: function (name) {
@@ -98,20 +98,20 @@ jQuery(document).ready(function($) {
         },
 
         { // Report - {\d+}
-            match: /\{(\d*)/,
+            match: /(^|[^{])\{(\d*)$/,
             search: search('report'),
-            index: 1,
+            index: 2,
             template: function (report) {
                 return '{' + report.id + '} ' + report.title;
             },
             replace: function (report) {
-                return ['{' + report.id, '}'];
+                return ['$1{' + report.id, '}'];
             },
             cache: true
         },
 
         { // Report - report:\d+
-            match: /\breport:(\d*)/,
+            match: /\breport:(\d*)$/,
             search: search('report'),
             index: 1,
             template: function (report) {
