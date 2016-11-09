@@ -227,11 +227,13 @@ class WikiAutoCompleteModule(Component):
                     SELECT name FROM milestone WHERE name %s ORDER BY name
                     """ % db.prefix_match(),
                     (db.prefix_match_value(term),))
-                return [row[0] for row in rows]
+                names = [row[0] for row in rows]
             else:
                 names = [row[0] for row in db(
                     "SELECT name FROM milestone ORDER BY name")]
-                return [name for name in names if name.startswith(term)]
+                names = [name for name in names if name.startswith(term)]
+            return [name for name in names
+                         if 'MILESTONE_VIEW' in req.perm('milestone', name)]
 
     def _suggest_report(self, req, term):
         args = self._get_num_ranges(term, lambda id: 1 <= id <= 0x7fffffff)
