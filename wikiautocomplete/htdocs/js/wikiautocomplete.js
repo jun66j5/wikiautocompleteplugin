@@ -1,4 +1,8 @@
 jQuery(document).ready(function($) {
+    function escape_newvalue(value) {
+        return value.replace(/\$/g, '$$$$');
+    }
+
     $('textarea.wikitext').textcomplete([
         { // Attachment
             match: /\b((?:raw-)?attachment):(\S*)$/,
@@ -13,7 +17,7 @@ jQuery(document).ready(function($) {
             replace: function (name) {
                 if (/\s/.test(name))
                     name = '"' + name + '"';
-                return '$1:' + name.replace(/\$/, '\\$');
+                return '$1:' + escape_newvalue(name);
             },
             cache: true
         },
@@ -27,7 +31,7 @@ jQuery(document).ready(function($) {
             },
             index: 2,
             replace: function (resolver) {
-                return ['$1[' + resolver + ':', ']'];
+                return ['$1[' + escape_newvalue(resolver) + ':', ']'];
             },
             cache: true,
         },
@@ -58,7 +62,7 @@ jQuery(document).ready(function($) {
             },
             index: 1,
             replace: function (wikipage) {
-                return 'wiki:' + wikipage;
+                return 'wiki:' + escape_newvalue(wikipage);
             },
             cache: true,
         },
@@ -89,7 +93,7 @@ jQuery(document).ready(function($) {
             },
             index: 2,
             replace: function (path) {
-                return '$1' + path;
+                return '$1' + escape_newvalue(path);
             },
             cache: true,
         },
