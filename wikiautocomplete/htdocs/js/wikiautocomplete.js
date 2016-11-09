@@ -1,9 +1,27 @@
 jQuery(document).ready(function($) {
     $('textarea.wikitext').textcomplete([
+        { // Attachment
+            match: /\b((?:raw-)?attachment):(\S*)$/,
+            search: function (term, callback) {
+                $.getJSON(wikiautocomplete.url + '/attachment',
+                          { q: term, realm: wikiautocomplete.realm,
+                            id: wikiautocomplete.id })
+                    .done(function (resp) { callback(resp); })
+                    .fail(function () { callback([]); });
+            },
+            index: 2,
+            replace: function (name) {
+                if (/\s/.test(name))
+                    name = '"' + name + '"';
+                return '$1:' + name.replace(/\$/, '\\$');
+            },
+            cache: true
+        },
+
         { // TracLinks
             match: /(^|[^[])\[(\w*)$/,
             search: function (term, callback) {
-                $.getJSON(wikiautocomplete_url + '/linkresolvers', { q: term })
+                $.getJSON(wikiautocomplete.url + '/linkresolvers', { q: term })
                     .done(function (resp) { callback(resp); })
                     .fail(function () { callback([]); });
             },
@@ -17,7 +35,7 @@ jQuery(document).ready(function($) {
         { // Tickets
             match: /#(\d*)$/,
             search: function (term, callback) {
-                $.getJSON(wikiautocomplete_url + '/ticket', { q: term })
+                $.getJSON(wikiautocomplete.url + '/ticket', { q: term })
                     .done(function (resp) { callback(resp); })
                     .fail(function () { callback([]); });
             },
@@ -34,7 +52,7 @@ jQuery(document).ready(function($) {
         { // Wiki pages
             match: /\bwiki:([\w/]*)$/,
             search: function (term, callback) {
-                $.getJSON(wikiautocomplete_url + '/wikipage', { q: term })
+                $.getJSON(wikiautocomplete.url + '/wikipage', { q: term })
                     .done(function (resp) { callback(resp); })
                     .fail(function () { callback([]); });
             },
@@ -48,7 +66,7 @@ jQuery(document).ready(function($) {
         { // Macros
             match: /\[\[(\w*)(?:\(([^)]*))?$/,
             search: function (term, callback) {
-                $.getJSON(wikiautocomplete_url + '/macro', { q: term })
+                $.getJSON(wikiautocomplete.url + '/macro', { q: term })
                     .done(function (resp) { callback(resp); })
                     .fail(function () { callback([]); });
             },
@@ -65,7 +83,7 @@ jQuery(document).ready(function($) {
         { // Source
             match: /\b(source:|log:)([\w/.]*(?:@\w*)?)$/,
             search: function (term, callback) {
-                $.getJSON(wikiautocomplete_url + '/source', { q: term })
+                $.getJSON(wikiautocomplete.url + '/source', { q: term })
                     .done(function (resp) { callback(resp); })
                     .fail(function () { callback([]); });
             },

@@ -5,7 +5,8 @@ from __future__ import with_statement
 import pkg_resources
 import re
 
-from trac.core import *
+from trac.core import Component, TracError, implements
+from trac.attachment import Attachment
 from trac.resource import Resource
 from trac.ticket.model import Ticket
 from trac.util.text import to_unicode
@@ -48,9 +49,12 @@ class WikiAutoCompleteModule(Component):
 
     def post_process_request(self, req, template, data, content_type):
         if template:
-            add_script_data(req, {
-                'wikiautocomplete_url': req.href('wikiautocomplete'),
-                })
+            script_data = {'url': req.href('wikiautocomplete')}
+            context = data.get('context')
+            if context and context.resource:
+                script_data['realm'] = context.resource.realm
+                script_data['id'] = context.resource.id
+            add_script_data(req, {'wikiautocomplete': script_data})
             add_script(req, 'wikiautocomplete/js/jquery.textcomplete.min.js')
             add_script(req, 'wikiautocomplete/js/wikiautocomplete.js')
             add_stylesheet(req, 'wikiautocomplete/css/jquery.textcomplete.css')
@@ -73,6 +77,8 @@ class WikiAutoCompleteModule(Component):
             completions = self._suggest_ticket(req, term)
         elif strategy == 'wikipage':
             completions = self._suggest_wikipage(req, term)
+        elif strategy == 'attachment':
+            completions = self._suggest_attachment(req, term)
         elif strategy == 'macro':
             completions = self._suggest_macro(req, term)
         elif strategy == 'source':
@@ -123,6 +129,41 @@ class WikiAutoCompleteModule(Component):
         return sorted(page for page in WikiSystem(self.env).pages
                            if page.startswith(term) and
                               'WIKI_VIEW' in req.perm('wiki', page))
+
+    def _suggest_attachment(self, req, term):
+        tokens = term.split(':', 2)
+        if len(tokens) == 2:  # "realm:..."
+            realm = tokens[0]
+            term = tokens[1]
+            rows = self.env.db_query("""
+                SELECT DISTINCT id FROM attachment
+                WHERE type=%s ORDER BY id""", (realm,))
+            completions = [realm + ':' + row[0] + ':'
+                           for row in rows if row[0].startswith(term)]
+        else:
+            completions = []
+            if len(tokens) == 3:  # "realm:id:..."
+                realm = tokens[0]
+                id = tokens[1]
+                term = tokens[2]
+            else:
+                completions.extend(
+                    row[0] + ':'
+                    for row in self.env.db_query(
+                        "SELECT DISTINCT type FROM attachment ORDER BY type")
+                    if row[0].startswith(term))
+                realm = req.args.get('realm')
+                id = req.args.get('id')
+            filenames = sorted(
+                att.filename for att in Attachment.select(self.env, realm, id)
+                             if att.filename.startswith(term) and
+                                'ATTACHMENT_VIEW' in req.perm(att.resource))
+            if len(tokens) == 3:
+                completions.extend('%s:%s:%s' % (realm, id, filename)
+                                   for filename in filenames)
+            else:
+                completions.extend(filenames)
+        return completions
 
     def _suggest_macro(self, req, term):
         resource = Resource()
