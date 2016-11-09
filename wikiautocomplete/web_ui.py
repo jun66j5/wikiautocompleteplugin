@@ -209,6 +209,16 @@ class WikiAutoCompleteModule(Component):
                     path, search_rev = path.rsplit('@', 1)
                     node = repos.get_node(path, repos.youngest_rev)
                     if node.can_view(req.perm):
+                        for category, name_, path_, rev \
+                                        in repos.get_quickjump_entries(None):
+                            if path_ and path_ != '/':
+                                # skip 'trunk', 'branches/...', 'tags/...'
+                                continue
+                            if ' ' in name_:
+                                # use first token, e.g. '1.0' from '1.0 (tip)'
+                                name_ = name_.split(' ', 1)[0]
+                            if name_.startswith(search_rev):
+                                completions.append('%s/%s@%s' % (reponame, path, name_))
                         for r in node.get_history(10):
                             rev = repos.short_rev(r[1])
                             if str(rev).startswith(search_rev):
