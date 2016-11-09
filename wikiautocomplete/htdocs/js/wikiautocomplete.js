@@ -92,7 +92,7 @@ jQuery(document).ready(function($) {
             replace: function (name) {
                 if (/\s/.test(name))
                     name = '"' + name + '"';
-                return 'milestone:' + name;
+                return 'milestone:' + escape_newvalue(name);
             },
             cache: true
         },
