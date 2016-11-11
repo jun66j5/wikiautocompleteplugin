@@ -3,6 +3,10 @@ jQuery(document).ready(function($) {
         return value.replace(/\$/g, '$$$$');
     }
 
+    function template(text, term) {
+        return $.htmlEscape(text);
+    }
+
     $('textarea.wikitext').textcomplete([
         { // Attachment
             match: /\b((?:raw-)?attachment):(\S*)$/,
@@ -14,6 +18,7 @@ jQuery(document).ready(function($) {
                     .fail(function () { callback([]); });
             },
             index: 2,
+            template: template,
             replace: function (name) {
                 if (/\s/.test(name))
                     name = '"' + name + '"';
@@ -30,6 +35,7 @@ jQuery(document).ready(function($) {
                     .fail(function () { callback([]); });
             },
             index: 2,
+            template: template,
             replace: function (resolver) {
                 return ['$1[' + escape_newvalue(resolver) + ':', ']'];
             },
@@ -45,7 +51,7 @@ jQuery(document).ready(function($) {
             },
             index: 1,
             template: function (ticket) {
-                return '#' + ticket.id + ' ' + ticket.summary;
+                return $.htmlEscape('#' + ticket.id + ' ' + ticket.summary);
             },
             replace: function (ticket) {
                 return '#' + ticket.id;
@@ -61,6 +67,7 @@ jQuery(document).ready(function($) {
                     .fail(function () { callback([]); });
             },
             index: 1,
+            template: template,
             replace: function (wikipage) {
                 return 'wiki:' + escape_newvalue(wikipage);
             },
@@ -92,6 +99,7 @@ jQuery(document).ready(function($) {
                     .fail(function () { callback([]); });
             },
             index: 2,
+            template: template,
             replace: function (path) {
                 return '$1' + escape_newvalue(path);
             },
